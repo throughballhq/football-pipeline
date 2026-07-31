@@ -1,0 +1,32 @@
+name: daily-pipeline
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # daily 06:00 UTC (08:00 CEST)
+  workflow_dispatch: {}    # manual "Run workflow" button for testing
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch bootstrap (teams, players, gameweeks, fixtures)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python fetch_bootstrap.py
+
+      - name: Daily market snapshot
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python daily_snapshot.py
