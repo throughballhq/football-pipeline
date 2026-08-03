@@ -68,8 +68,8 @@ def normalize_0_100(values: dict) -> dict:
 
 def quintile(value, sorted_values) -> int:
     """Rank value into 1..5 within the league distribution."""
-    if not sorted_values:
-        return 3
+    if not sorted_values or len(set(sorted_values)) <= 1:
+        return 3  # degenerate distribution -> honest neutral, never a fake 1
     below = sum(1 for v in sorted_values if v < value)
     return min(5, max(1, int(below / len(sorted_values) * 5) + 1))
 
@@ -218,14 +218,19 @@ def compute_team_form(client, bootstrap, finished: list[int], next_gw: int):
             meta[t["id"]] = (n, xf, xa)
         source = "model"
     else:
-        raw_att = {
-            t["id"]: (t.get("strength_attack_home", 0) + t.get("strength_attack_away", 0)) / 2
-            for t in teams
-        }
-        raw_def = {
-            t["id"]: (t.get("strength_defence_home", 0) + t.get("strength_defence_away", 0)) / 2
-            for t in teams
-        }
+        # FPL leaves strength_attack_*/strength_defence_* at 0 until the season
+        # settles; strength_overall_* is populated pre-season. Fallback chain:
+        # specific fields -> overall fields -> flat neutral.
+        def pick_prior(key_a, key_b):
+            raw = {
+                t["id"]: ((t.get(key_a) or 0) + (t.get(key_b) or 0)) / 2
+                for t in teams
+            }
+            return raw if len(set(raw.values())) > 1 else None
+
+        overall = pick_prior("strength_overall_home", "strength_overall_away")
+        raw_att = pick_prior("strength_attack_home", "strength_attack_away") or overall             or {t["id"]: 1 for t in teams}
+        raw_def = pick_prior("strength_defence_home", "strength_defence_away") or overall             or {t["id"]: 1 for t in teams}
         meta = {t["id"]: (0, None, None) for t in teams}
         source = "fpl_prior"
 
