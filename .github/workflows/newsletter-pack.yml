@@ -1,0 +1,33 @@
+name: newsletter-pack
+
+on:
+  workflow_dispatch: {}    # run on demand from the Actions tab
+  schedule:
+    - cron: "0 7 * * 1,4"  # Mon + Thu 07:00 UTC — pack ready in the morning
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build newsletter pack
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python newsletter_pack.py
+
+      - name: Upload pack as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: newsletter-pack
+          path: pack_out/
+          retention-days: 14
