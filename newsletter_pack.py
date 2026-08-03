@@ -184,20 +184,46 @@ def build(client, out_dir: str):
         {"team": n, "att_run_avg": avg_run(a), "def_run_avg": avg_run(d)}
         for n, a, d in zip(names, att, deff)
     ]
+    def is_recent_transfer(el, days: int = 120):
+        """Joined current club within the last N days -> a genuine new signing.
+        Guards drafts against narrating mid-last-season moves as summer news."""
+        jd = el.get("team_join_date")
+        if not jd:
+            return False
+        try:
+            return (date.today() - date.fromisoformat(jd)).days <= days
+        except ValueError:
+            return False
+
+    def player_entry(el, s):
+        return {
+            "name": el["web_name"],
+            "team": teams.get(el["team"], {}).get("short_name"),
+            "price": num(s["price"]),
+            "ownership_pct": num(s["ownership_pct"]),
+            "team_join_date": el.get("team_join_date"),
+            "recent_transfer": is_recent_transfer(el),
+        }
+
+    snaps_sorted = sorted(
+        snapshots, key=lambda s: num(s["ownership_pct"]) or 0, reverse=True)
+
     by_pos = {}
-    for s in sorted(snapshots, key=lambda s: num(s["ownership_pct"]) or 0, reverse=True):
+    for s in snaps_sorted:
         el = players.get(s["player_id"])
         if not el:
             continue
         pos = {1: "GKP", 2: "DEF", 3: "MID", 4: "FWD"}.get(el["element_type"], "?")
         by_pos.setdefault(pos, [])
         if len(by_pos[pos]) < 5:
-            by_pos[pos].append({
-                "name": el["web_name"],
-                "team": teams.get(el["team"], {}).get("short_name"),
-                "price": num(s["price"]),
-                "ownership_pct": num(s["ownership_pct"]),
-            })
+            by_pos[pos].append(player_entry(el, s))
+
+    recent_transfers = [
+        player_entry(players[s["player_id"]], s)
+        for s in snaps_sorted
+        if players.get(s["player_id"]) and is_recent_transfer(players[s["player_id"]])
+        and (num(s["ownership_pct"]) or 0) >= 1
+    ][:10]
 
     brief = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -215,6 +241,7 @@ def build(client, out_dir: str):
                 [t for t in team_runs if t["def_run_avg"]], key=lambda t: t["def_run_avg"])[:5],
         },
         "template": {"top_owned_by_position": by_pos},
+        "notable_recent_transfers": recent_transfers,
         "price_movers_7d": [{"name": n, "delta": d} for n, d in movers],
         "charts": sorted(f for f in os.listdir(gw_dir) if f.endswith(".png")),
         "todo_post_gw1": ["value_ppm content", "xgi_per90 trends", "form slopes",
