@@ -76,6 +76,7 @@ def main():
             "full_name": f"{el.get('first_name', '')} {el.get('second_name', '')}".strip(),
             "position": POSITIONS.get(el.get("element_type")),
             "status": el.get("status"),
+            "team_join_date": el.get("team_join_date"),
         }
         for el in data["elements"]
     ]
