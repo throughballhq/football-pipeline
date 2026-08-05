@@ -45,6 +45,12 @@ I'm visibly excited when they say something the crowd hasn't noticed yet.
 - End every issue with a single-sentence sign-off that lands the point — no
   "thanks for reading", no begging for shares.
 
+## Typography
+
+- Use "-" (hyphen), never the em-dash "—", in all body text.
+- Explorer links point to app.thethroughball.com/explorer (the root is the
+  dashboard, not the explorer).
+
 ## Banned phrases
 
 "it remains to be seen", "only time will tell", "at the end of the day",
