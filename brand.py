@@ -115,14 +115,12 @@ def finish(fig, path: str):
 
 
 def difficulty_cmap() -> ListedColormap:
-    """5-step fixture difficulty scale: 1 easy (light aqua) -> 5 hard (deep ink).
+    """5-step fixture difficulty scale: 1 easy (green) -> 5 hard (red).
 
-    Deliberately neutral (no lime): the scale describes, lime points.
-    Lime stays reserved for highlighting the story — e.g. via
-    highlight_cell(ax, col, row) drawing a lime frame around the cells
-    that ARE the point of the chart."""
-    blend = LinearSegmentedColormap.from_list("tb_diff", ["#C9E8E7", AQUA, "#5F8B8A", "#33504F", "#0F1D1D"])
-    return ListedColormap([blend(x) for x in (0.0, 0.25, 0.5, 0.75, 1.0)])
+    Semantic palette (Ondrej, 6 Aug 2026) - reads instantly, matches the app.
+    Cells always carry numbers/names, so colour is never the only signal.
+    Lime stays reserved for highlighting the story (highlight_cell)."""
+    return ListedColormap(["#5ECF84", "#9DE8B6", "#CAF4D8", "#FFD8D8", "#F76060"])
 
 
 def highlight_cell(ax, col: int, row: int, lw: float = 2.6):

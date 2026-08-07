@@ -71,7 +71,7 @@ def fixture_heatmap(title: str, subtitle: str, team_names: list,
             if not np.isnan(data[i, j]):
                 v = int(data[i, j])
                 ax.text(j, i, str(v), ha="center", va="center", fontsize=8.5,
-                        color=INK if v <= 2 else WHITE, fontweight="bold")
+                        color=INK, fontweight="bold")
     for (row, col) in (highlights or []):
         brand.highlight_cell(ax, col, row)
     cbar = fig.colorbar(im, ax=ax, shrink=0.6, ticks=[1.4, 4.6])
