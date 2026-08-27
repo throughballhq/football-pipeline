@@ -94,14 +94,17 @@ def compute_player_metrics(client, elements, finished: list[int]):
 
     # price 7 days ago from our own snapshots
     week_ago = (today - timedelta(days=7)).isoformat()
+    hit = client.table("daily_snapshots").select("snapshot_date").lte(
+        "snapshot_date", week_ago).order("snapshot_date", desc=True).limit(1).execute().data
+    baseline_date = hit[0]["snapshot_date"] if hit else None
     old_prices = {
         r["player_id"]: num(r["price"])
         for r in fetch_all(
             client.table("daily_snapshots")
             .select("player_id, price")
-            .eq("snapshot_date", week_ago)
+            .eq("snapshot_date", baseline_date)
         )
-    }
+    } if baseline_date else {}
 
     # last-N-GW stats from our own per-GW table
     recent: dict[int, list] = {}
