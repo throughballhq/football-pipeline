@@ -88,9 +88,14 @@ def load(client):
     ) if latest_date else []
 
     week_ago = (date.fromisoformat(latest_date) - timedelta(days=7)).isoformat() if latest_date else None
+    old_date = None
+    if week_ago:
+        hit = client.table("daily_snapshots").select("snapshot_date").lte(
+            "snapshot_date", week_ago).order("snapshot_date", desc=True).limit(1).execute().data
+        old_date = hit[0]["snapshot_date"] if hit else None
     old_snaps = fetch_all(
-        client.table("daily_snapshots").select("player_id, price").eq("snapshot_date", week_ago)
-    ) if week_ago else []
+        client.table("daily_snapshots").select("player_id, price").eq("snapshot_date", old_date)
+    ) if old_date else []
 
     return bootstrap, teams, next_gw, deadline, fixtures, diff_by_key, snapshots, old_snaps, latest_date
 
@@ -168,8 +173,11 @@ def build(client, out_dir: str):
         for s in snapshots:
             old = old_price.get(s["player_id"])
             new = num(s["price"])
-            if old is not None and new is not None and abs(new - old) >= 0.1:
-                movers.append((players[s["player_id"]]["web_name"], round(new - old, 1)))
+            if old is None or new is None:
+                continue
+            delta = round(new - old, 1)  # round BEFORE comparing: 7.6-7.5
+            if abs(delta) >= 0.1:        # is 0.0999... in float arithmetic
+                movers.append((players[s["player_id"]]["web_name"], delta))
         movers = sorted(movers, key=lambda m: m[1], reverse=True)
         movers = movers[:7] + movers[-7:] if len(movers) > 14 else movers
         if movers:
